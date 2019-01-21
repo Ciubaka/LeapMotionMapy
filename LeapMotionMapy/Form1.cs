@@ -20,8 +20,10 @@ namespace LeapMotionMapy
     {
         private byte[] imagedata = new byte[1];
         private Controller controller = new Controller();
-        Bitmap bitmap = new Bitmap(640, 480, System.Drawing.Imaging.PixelFormat.Format8bppIndexed);
+        Bitmap bitmap = new Bitmap(400, 200, System.Drawing.Imaging.PixelFormat.Format8bppIndexed);
         List<PointLatLng> _points;
+
+        private int blokada;
         private int blokada2;
         private int blokada3;
         public Form1()
@@ -29,6 +31,7 @@ namespace LeapMotionMapy
             InitializeComponent();
             _points = new List<PointLatLng>();
             controller.EventContext = WindowsFormsSynchronizationContext.Current;
+            blokada = new Int32();
             blokada2 = new Int32();
             blokada3 = new Int32();
             controller.FrameReady += newFrameHandler;
@@ -78,7 +81,7 @@ namespace LeapMotionMapy
                 double degYaw = yaw * (180 / Math.PI);
                 double degRoll = roll * (180 / Math.PI);
 
-                txtPrzyklad.Text = _points.Count.ToString() + " " + hand.GrabStrength.ToString();
+                //txtPrzyklad.Text = _points.Count.ToString() + " " + hand.GrabStrength.ToString();
                 //zooom 0-2
                 double pitch2 = (degPitch * 3);
                 double yaw2 = (degYaw * 3);
@@ -92,32 +95,56 @@ namespace LeapMotionMapy
                 double pitch10 = (degPitch / 6);
                 double yaw10 = (degYaw / 6);
 
+                //var cos = hand.PalmPosition;
+                //txtPrzyklad.Text = "y " + cos.y + "x " + cos.x;
+
+                
+
 
 
                 float roll2 = (float)(degRoll / 5);
 
                 var center2 = map.Position;
+                setCoordinates(center2);
 
-                if (center2.Lat < 0)
-                {
-                    txtLat.Text = (-center2.Lat).ToString() + " S";
-                }
-                else
-                {
-                    txtLat.Text = center2.Lat.ToString() + " N";
-                }
-                if (center2.Lng < 0)
-                {
-                    txtLong.Text = (-center2.Lng).ToString() + " W";
-                }
-                else
-                {
-                    txtLong.Text = center2.Lng.ToString() + " E";
-                }
+                    //Math.Round zaokrągla wartość zmiennoprzecinkową o podwójnej precyzji do określonej liczby cyfr ułamkowych.
+                //Określa, w jaki sposób matematyczne metody zaokrąglania powinny przetwarzać liczbę znajdującą się w połowie między dwoma liczbami.
+                //Zasadniczo powyższa funkcja pobiera twoją wartość wejściową i zaokrągla ją do 2 (lub dowolnej podanej liczby) miejsc dziesiętnych. Z MidpointRounding.AwayFromZerokiedy numer jest w połowie drogi między dwoma innymi, jest ona zaokrąglana w kierunku najbliższego numeru, który jest oddalony od zera. Istnieje również inna opcja, którą możesz użyć, aby zaokrąglić w kierunku najbliższej liczby parzystej.
+                //var szerokosc = Math.Round(center2.Lat, 2, MidpointRounding.AwayFromZero);
+                //var dlugosc = Math.Round(center2.Lng, 2, MidpointRounding.AwayFromZero);
 
-                mapZoomik.Text = "Map zoom: " + map.Zoom;
-                numberofDetectedHands.Text = "Liczba wykrytcyh rąlk: " + frame.Hands.Count.ToString();
+                //if (szerokosc < 0)
+                //{
+                //    txtLat.Text = szerokosc < -90 ? "90.00 S" : (-szerokosc).ToString() + " S";
+                //}
+                //else
+                //{
+                //    txtLat.Text = szerokosc > 90 ? "90.00 N" : szerokosc.ToString() + " N";
+                //}
+
+                //if (dlugosc < 0)
+                //{
+                //    txtLong.Text = dlugosc < -180 ? "180.00 W" : (-dlugosc).ToString() + " W";
+                //}
+                //else
+                //{
+                //    txtLong.Text = dlugosc > 180 ? "180.00 E" :  dlugosc.ToString() + " E";
+                //}
+
+                mapZoomik.Text = map.Zoom.ToString();
+                numberofDetectedHands.Text = frame.Hands.Count.ToString();
                 //ktora dlon
+
+                if (hand.PinchDistance > 90 && blokada < 2)
+                {
+                    map.Zoom += 1;
+                    blokada++;
+                }
+                else if (hand.PinchDistance < 20 && blokada > 0)
+                {
+                    map.Zoom -= 1;
+                    blokada--;
+                }
 
                 //map.MouseMove = center2;
 
@@ -125,7 +152,7 @@ namespace LeapMotionMapy
                 {
                     //if(pitch2 > 14 && pitch2 < 24)
                         
-                    map.Position = new PointLatLng(pitch2, yaw2);
+                    map.Position = new PointLatLng(pitch2,yaw2);
                     //else
                     //{
 
@@ -140,18 +167,23 @@ namespace LeapMotionMapy
                 {
                     if(hand.PalmVelocity.y > 2000 & blokada2 < 1)
                     {
-                        var center = map.Position;
+                        PointLatLng center = map.Position;
                         // PointLatLng point = new PointLatLng(degPitch, degYaw);
-                        PointLatLng point = new PointLatLng(center.Lat, center.Lng);
-                        AddMarker(point);
+                        //PointLatLng point = new PointLatLng(center.Lat, center.Lng);
+                        AddMarker(center);
+                        var addresses = GetAddress(center);
+
+                        if (addresses != null)
+                            txtAddress.Text = String.Join(", ", addresses.ToArray());
+                        else
+                            txtAddress.Text = "Nie mozna zaladowac adresu";
+
                         blokada2++;
                     }
                 }
+                
 
-                //if (hand.GrabStrength == 1)
-                //{
-                //    RemoveAllObject();
-                //}
+              
                 if(hand.PalmVelocity.x < -2000)
                 {
                     RemoveAllObject();
@@ -168,10 +200,10 @@ namespace LeapMotionMapy
                     //polygons.Polygons.Add(polygon);
                     //map.Overlays.Add(polygons);
 
-                    markPolygon();
+                    markPolygon(_points);
                 }
 
-                if (hand.IsRight)
+                if (hand.IsLeft)
                 {
                     blokada3 = 0;
                 }
@@ -179,18 +211,7 @@ namespace LeapMotionMapy
                 {
                     if (hand.GrabStrength == 1 && blokada3 < 1)
                     {
-                        //MapRoute route = GMap.NET.MapProviders.GoogleMapProvider.Instance.GetRoute(
-                        // _points.First(), _points.Last(), false, false, 15);
-                        //GMapRoute r = new GMapRoute(route.Points, "My route")
-                        //{
-                        //    Stroke = new Pen(Color.Red, 5)
-                        //};
-                        //GMapOverlay routes = new GMapOverlay("routes");
-                        //GMapOverlay routesOverlay = new GMapOverlay("routes");
-                        //routesOverlay.Routes.Add(r);
-                        //map.Overlays.Add(routesOverlay);
-                        //lblDistance.Text = route.Distance + "km";
-                        getRoute();
+                       getRoute();
                         blokada3++;
                     }
                 }
@@ -206,11 +227,11 @@ namespace LeapMotionMapy
 
         void onImageRequestFailed(object sender, ImageRequestFailedEventArgs e)
         {
-            //if (e.reason == Leap.Image.RequestFailureReason.Insufficient_Buffer)
-            //{
-            //    imagedata = new byte[e.requiredBufferSize];
-            //}
-            //Console.WriteLine("Image request failed: " + e.message);
+            if (e.reason == Leap.Image.RequestFailureReason.Insufficient_Buffer)
+            {
+                imagedata = new byte[e.requiredBufferSize];
+            }
+            Console.WriteLine("Image request failed: " + e.message);
         }
 
         void onImageReady(object sender, ImageEventArgs e)
@@ -273,25 +294,47 @@ namespace LeapMotionMapy
             map.Position = point;
         }
 
-        private void AddMarker(PointLatLng pointToAdd, GMarkerGoogleType markerType = GMarkerGoogleType.arrow)
+        private void AddMarker(PointLatLng pointToAdd, GMarkerGoogleType markerType = GMarkerGoogleType.red_big_stop)
         {
                 _points.Add(pointToAdd);
-                var markers = new GMapOverlay("markers");
-                var marker = new GMarkerGoogle(pointToAdd, markerType);
+                GMapOverlay markers = new GMapOverlay("markers");
+                GMarkerGoogle marker = new GMarkerGoogle(pointToAdd, markerType);
                 markers.Markers.Add(marker);
                 map.Overlays.Add(markers);
-                txtLat.Text = pointToAdd.Lat.ToString();
-                txtLong.Text = pointToAdd.Lng.ToString();
-
-
-
-                //map.Refresh();
+                setCoordinates(pointToAdd);
+                map.Refresh();
         }
 
         //private void btnClear_Click(object sender, EventArgs e)
         //{
         //    _points.Clear();
         //}
+        //Math.Round zaokrągla wartość zmiennoprzecinkową o podwójnej precyzji do określonej liczby cyfr ułamkowych.
+        //Określa, w jaki sposób matematyczne metody zaokrąglania powinny przetwarzać liczbę znajdującą się w połowie między dwoma liczbami.
+        //Zasadniczo powyższa funkcja pobiera twoją wartość wejściową i zaokrągla ją do 2 (lub dowolnej podanej liczby) miejsc dziesiętnych. Z MidpointRounding.AwayFromZerokiedy numer jest w połowie drogi między dwoma innymi, jest ona zaokrąglana w kierunku najbliższego numeru, który jest oddalony od zera. Istnieje również inna opcja, którą możesz użyć, aby zaokrąglić w kierunku najbliższej liczby parzystej.
+        private void setCoordinates(PointLatLng point)
+        {
+            var szerokosc = Math.Round(point.Lat, 2, MidpointRounding.AwayFromZero);
+            var dlugosc = Math.Round(point.Lng, 2, MidpointRounding.AwayFromZero);
+
+            if (szerokosc < 0)
+            {
+                txtLat.Text = szerokosc < -90 ? "90.00 S" : (-szerokosc).ToString() + " S";
+            }
+            else
+            {
+                txtLat.Text = szerokosc > 90 ? "90.00 N" : szerokosc.ToString() + " N";
+            }
+
+            if (dlugosc < 0)
+            {
+                txtLong.Text = dlugosc < -180 ? "180.00 W" : (-dlugosc).ToString() + " W";
+            }
+            else
+            {
+                txtLong.Text = dlugosc > 180 ? "180.00 E" : dlugosc.ToString() + " E";
+            }
+        }
 
         private void btnGetRoute_Click(object sender, EventArgs e)
         {
@@ -311,7 +354,7 @@ namespace LeapMotionMapy
 
         private void btnAddPoly_Click(object sender, EventArgs e)
         {
-            markPolygon();
+            markPolygon(_points);
         }
 
         private void RemoveAllObject()
@@ -320,21 +363,55 @@ namespace LeapMotionMapy
             {
                 map.Overlays.RemoveAt(0);
                 _points.Clear();
+                txtAddress.Clear();
+                lblDistance.Text = "";
+                txtPolygonArea.Text = "";
                 map.Refresh();
             }
         }
 
-        private void markPolygon()
+        private void markPolygon(List<PointLatLng> poinT)
         {
-            var polygon = new GMap.NET.WindowsForms.GMapPolygon(_points, "My Area")
+            if (poinT.Count > 2)
             {
-                Stroke = new Pen(Color.DarkBlue, 3),
-                Fill = new SolidBrush(Color.BurlyWood)
+                var polygon = new GMapPolygon(_points, "My Area")
+            {
+                Stroke = new Pen(Color.DarkGreen, 3),
+                Fill = new SolidBrush(Color.DarkBlue)
             };
-            var polygons = new GMapOverlay("polygons");
-            polygons.Polygons.Add(polygon);
-            map.Overlays.Add(polygons);
-            map.Refresh();
+                var polygons = new GMapOverlay("polygons");
+                polygons.Polygons.Add(polygon);
+                map.Overlays.Add(polygons);
+                txtPolygonArea.Text =  calculatePolygonAreas(poinT);
+                map.Refresh();
+            }
+        }
+        private string calculatePolygonAreas(List<PointLatLng> coords)
+        {
+            IList<PointLatLng> points = new List<PointLatLng>();
+            foreach (PointLatLng coord in coords)
+            {
+                PointLatLng p = new PointLatLng(
+                  coord.Lng * (System.Math.PI * 6378137 / 180),
+                  coord.Lat * (System.Math.PI * 6378137 / 180)
+                );
+                points.Add(p);
+            }
+            points.Add(points[0]);
+            var area1 = Math.Abs(points.Take(points.Count - 1)
+              .Select((p, i) => (points[i + 1].Lat - p.Lat) * (points[i + 1].Lng + p.Lng))
+              .Sum() / 2);
+            
+            double area  = Math.Round(area1, 2, MidpointRounding.AwayFromZero);
+
+            if (area > 10000)
+            {
+                return (area > 1000000) ? Math.Round((area / 1000000), 2, MidpointRounding.AwayFromZero).ToString() + " km2" : Math.Round((area / 10000), 2, MidpointRounding.AwayFromZero).ToString() + " ha";
+            }
+            else
+            {
+                return Math.Round(area, 2, MidpointRounding.AwayFromZero).ToString() + " m2";
+            }
         }
 
         private void getRoute()
@@ -342,36 +419,26 @@ namespace LeapMotionMapy
             if (_points.Count > 1)
             {
 
-
-                MapRoute route = GMap.NET.MapProviders.GoogleMapProvider.Instance.GetRoute(
+                MapRoute route = GoogleMapProvider.Instance.GetRoute(
                              _points.First(), _points.Last(), false, false, 15);
                 GMapRoute r = new GMapRoute(route.Points, "My route")
                 {
                     Stroke = new Pen(Color.Red, 5)
                 };
-                GMapOverlay routes = new GMapOverlay("routes");
                 GMapOverlay routesOverlay = new GMapOverlay("routes");
                 routesOverlay.Routes.Add(r);
                 map.Overlays.Add(routesOverlay);
                 lblDistance.Text = route.Distance + "km";
+                map.Refresh();
             }
         }
 
-        private void Form1_Move(object sender, EventArgs e)
-        {
-            
-        }
-
-        private void Form1_MouseMove(object sender, MouseEventArgs e)
-        {
-            //e.X
-        }
         private List<String> GetAddress(PointLatLng point)
         {
             List<Placemark> placemarks = null;
             GMapProviders.GoogleMap.ApiKey = @"AIzaSyC0azH144FlQ3hP3mS6SLVLISaraYg-sJM";
             var statusCode = GMapProviders.GoogleMap.GetPlacemarks(point, out placemarks);
-            txtPrzyklad.Text = statusCode.ToString();
+            //txtPrzyklad.Text = statusCode.ToString();
             if (statusCode == GeoCoderStatusCode.OK && placemarks != null)
             {
                 List<String> addresses = new List<string>();
@@ -383,5 +450,9 @@ namespace LeapMotionMapy
             }
             return null;
         }
+
+       
+
+
     }
 }
