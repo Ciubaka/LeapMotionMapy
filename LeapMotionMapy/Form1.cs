@@ -29,6 +29,7 @@ namespace LeapMotionMapy
         private int blokada;
         private int blokada2;
         private int blokada3;
+        private int blokada4;
 
         /// <summary>
         /// Konstruktor klasy uruchamiającej inicjujący kontrole zdarzeń Leapa'a, generowanie ramek oraz twoerzenie obiektow blokad i listy punktow
@@ -41,6 +42,7 @@ namespace LeapMotionMapy
             blokada = new Int32();
             blokada2 = new Int32();
             blokada3 = new Int32();
+            blokada4 = new Int32();
             controller.FrameReady += newFrameHandler;
             //controller.ImageReady += onImageReady;
             //controller.ImageRequestFailed += onImageRequestFailed;
@@ -174,7 +176,7 @@ namespace LeapMotionMapy
 
                 ///gest pozwalający zaznaczyć obszar mapy ograniczony wcześniej zaznaczonymi punktami
                 ///jeżeli prędkość ruchu dłoni w prawo przekroczy 2000mm/s wykonaj funckję zaznaczania obszaru mapy
-                if ((hand.PalmVelocity.x) > 2000)
+                if ((hand.PalmVelocity.x) > 2000 )
                 {
                     markPolygon(_points);
                 }
@@ -183,7 +185,7 @@ namespace LeapMotionMapy
                 ///gest pozwalający  wyznaczyć trasę z punktu początkowego do końcowego
                 ///gest może być wykonany tylko prawą dłonią
                 ///jeżeli jest lewa
-                if (hand.IsLeft)
+                if (hand.IsRight)
                 {
                     ///zmień wartość blokady sterującej możliwościa  wyznacznia tras z punktu do punktu na  zero w celu ponownego korzystania z możliwości wyznaczania tras
                     blokada3 = 0;
